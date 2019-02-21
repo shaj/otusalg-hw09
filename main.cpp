@@ -1,16 +1,10 @@
 
 #include <iostream>
-// #include <iomanip>
 #include <vector>
 #include <chrono>
-// #include <iterator>
-// #include <functional>
-// #include <algorithm>
-// #include <fstream>
-// #include <random>
 
 #include "generators.h"
-#include "sel.h"
+#include "bintree.h"
 
 // Отсюда
 // https://stackoverflow.com/a/21995693
@@ -36,19 +30,14 @@ struct measure
 int main(int argc, char const *argv[])
 {
 
-	std::vector<int> v ;
+	std::vector<int> v {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-	otusalg::gen_type8(25, v, 0, 200);
+	otusalg::BinTree<int> bt;
 
-	otusalg::nth_el(v);
+	for(const auto &it: v)
+		bt.insert(it);
 
-	std::copy(v.begin(), v.end(), std::ostream_iterator<int>(std::cout, " "));
-	std::cout << std::endl;
-
-	std::sort(v.begin(), v.end());
-	
-	std::copy(v.begin(), v.end(), std::ostream_iterator<int>(std::cout, " "));
-	std::cout << std::endl;
+	bt.print(std::cout);
 
 	return 0;
 }
