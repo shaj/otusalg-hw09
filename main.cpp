@@ -37,6 +37,20 @@ int main(int argc, char const *argv[])
 	for(const auto &it: v)
 		bt.insert(it);
 
+	auto a = bt.find(0);
+
+	if(bt.find(0) == nullptr) std::cout << "Not found 0\n";
+	else std::cout << "Found 0\n";
+
+	if(bt.find(5) == nullptr) std::cout << "Not found 5\n";
+	else std::cout << "Found 5\n";
+
+	if(bt.find(10) == nullptr) std::cout << "Not found 10\n";
+	else std::cout << "Found 10\n";
+
+	if(bt.find(20) == nullptr) std::cout << "Not found 20\n";
+	else std::cout << "Found 20\n";
+
 	bt.print(std::cout);
 
 	return 0;
