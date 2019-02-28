@@ -16,9 +16,14 @@ class BinTreeNode : public std::enable_shared_from_this<BinTreeNode<T>>
 	T _data;
 
 public:
+
+	// friend BinTreeNode;
+
 	std::shared_ptr<BinTreeNode<T>> left;
 	std::shared_ptr<BinTreeNode<T>> right;
-	std::weak_ptr<BinTreeNode<T>> parent;
+	std::shared_ptr<BinTreeNode<T>> parent;
+
+
 
 	BinTreeNode(const T &it, std::shared_ptr<BinTreeNode> p) : parent(p), _data(it)
 	{
@@ -27,6 +32,33 @@ public:
 
 	~BinTreeNode() {}
 
+
+	void setLeft(std::shared_ptr<BinTreeNode<T>> pn)
+	{
+		if(pn != nullptr)
+		{
+			pn->parent = this->shared_from_this();
+		}
+
+		left = pn;
+	}
+
+
+	void setRight(std::shared_ptr<BinTreeNode<T>> pn)
+	{
+		if(pn != nullptr)
+		{
+			pn->parent = this->shared_from_this();
+		}
+
+		right = pn;
+	}
+
+
+	const T &data() const
+	{
+		return _data;
+	}
 
 	void insert(const T &it)
 	{
@@ -76,89 +108,169 @@ public:
 
 	void bl_rotate()
 	{
-		auto b = right;
-		auto c = right->left;
-		auto M = c->left;
-		auto N = c->right;
+		std::shared_ptr<BinTreeNode<T>> p;
+		std::shared_ptr<BinTreeNode<T>> b;
+		std::shared_ptr<BinTreeNode<T>> c;
+		std::shared_ptr<BinTreeNode<T>> M;
+		std::shared_ptr<BinTreeNode<T>> N;
 
-		if(parent->left == this)
+		p = this->parent;
+		b = right;
+		if(b != nullptr)
+			c = b->left;
+		else
+			c = nullptr;
+	
+		if(c != nullptr)
 		{
-			parent->left = c;
+			M = c->left;
+			N = c->right;
 		}
 		else
 		{
-			parent->right = c;
+			M = nullptr;
+			N = nullptr;
 		}
 
-		c->left = this->shared_from_this();
-		c->right = b;
+		if(p != nullptr)
+		{
+			if(p->left.get() == this)
+				p->setLeft(c);
+			else
+				p->setRight(c);
+		}
 
-		right = M;
-		b->left = N;
+		if(c != nullptr)
+		{
+			c->setLeft(this->shared_from_this());
+			c->setRight(b);
+		}
+
+		this->setRight(M);
+		if(b != nullptr)
+		{
+			b->setLeft(N);
+		}
 	}
 
 
 	void br_rotate()
 	{
-		auto b = left;
-		auto c = left->right;
-		auto M = c->left;
-		auto N = c->right;
+		std::shared_ptr<BinTreeNode<T>> p;
+		std::shared_ptr<BinTreeNode<T>> b;
+		std::shared_ptr<BinTreeNode<T>> c;
+		std::shared_ptr<BinTreeNode<T>> M;
+		std::shared_ptr<BinTreeNode<T>> N;
 
-		if(parent->left == this)
+		p = this->parent;
+		b = left;
+		if(b != nullptr)
+			c = b->right;
+		else
+			c = nullptr;
+
+		if(c != nullptr)
 		{
-			parent->left = c;
+			M = c->left;
+			N = c->right;
 		}
 		else
 		{
-			parent->right = c;
+			M = nullptr;
+			N = nullptr;
 		}
 
-		c->left = b;
-		c->right = this->shared_from_this();
+		if(p != nullptr)
+		{
+			if(p->left.get() == this)
+				p->setLeft(c);
+			else
+				p->setRight(c);
+		}
+
+		if(c != nullptr)
+		{
+			c->setLeft(b);
+			c->setRight(this->shared_from_this());
+		}
 
 		left = N;
-		b->right = M;
+		if(b != nullptr)
+			b->setRight(M);
 	}
 
 	
 	void l_rotate()
 	{
-		auto b = right;
-		auto C = b->left;
+		std::shared_ptr<BinTreeNode<T>> p;
+		std::shared_ptr<BinTreeNode<T>> b;
+		std::shared_ptr<BinTreeNode<T>> C;
 
-		if(parent->left == this)
-			parent->left = b;
-		else
-			parent->right = b;
+		p = this->parent;
+		b = right;
+		if(b != nullptr)
+			C = b->left;
 
-		b->left = this->shared_from_this();
+		if(p != nullptr)
+		{
+			if(p->left.get() == this)
+				p->setLeft(b);
+			else
+				p->setRight(b);
+		}
+
+		if(b != nullptr)
+			b->setLeft(this->shared_from_this());
 		right = C;
 	}
 
 
 	void r_rotate()
 	{
-		auto b = left;
-		auto C = b->right;
+		std::shared_ptr<BinTreeNode<T>> p;
+		std::shared_ptr<BinTreeNode<T>> b;
+		std::shared_ptr<BinTreeNode<T>> C;
 
-		if(parent->left == this)
-			parent->left = b;
-		else
-			parent->right = b;
+		p = this->parent;
+		b = left;
+		if(b != nullptr)
+			C = b->right;
 
-		b->right = this->shared_from_this();
+		if(p != nullptr)
+		{
+			if(p->left.get() == this)
+				p->setLeft(b);
+			else
+				p->setRight(b);
+		}
+
+		if(p != nullptr)
+		{
+			if(p->left.get() == this)
+				p->setLeft(b);
+			else
+				p->setRight(b);
+		}
+
+		if(b != nullptr)
+			b->setRight(this->shared_from_this());
 		left = C;
 	}
 
 
 	void print(std::ostream &os)
 	{
-		os << "   node: " << _data << "\n";
+		os << "\"" << _data << "\"\n";
 		if(left != nullptr)
+		{
+			os << "\"" << _data << "\" -> \"" << left->data() << "\" [label=\"L\"]\n";
 			left->print(os);
+		}
 		if(right != nullptr)
+		{
+			os << "\"" << _data << "\" -> \"" << right->data() << "\" [label=\"R\"]\n";
 			right->print(os);
+		}
 	}
 
 };
@@ -199,8 +311,9 @@ public:
 
 	void print(std::ostream &os)
 	{
-		os << "BinTree:\n";
+		os << "digraph G {\n";
 		rootNode->print(os);
+		os << "}\n";
 	}
 
 };
