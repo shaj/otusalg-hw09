@@ -12,6 +12,7 @@ namespace otusalg
 template<typename T>
 class BinTreeNode : public std::enable_shared_from_this<BinTreeNode<T>>
 {
+protected:
 
 	T _data;
 
@@ -60,7 +61,7 @@ public:
 		return _data;
 	}
 
-	void insert(const T &it)
+	virtual void insert(const T &it)
 	{
 		if(it < _data)
 		{
@@ -280,6 +281,8 @@ template<typename T>
 class BinTree
 {
 
+protected:
+
 	std::shared_ptr<BinTreeNode<T>> rootNode;
 
 public:
@@ -287,7 +290,7 @@ public:
 	BinTree() {}
 	~BinTree() {}
 
-	void insert(const T &it)
+	virtual void insert(const T &it)
 	{
 		if(rootNode == nullptr)
 			rootNode = std::make_shared<BinTreeNode<T>>(it, nullptr);
