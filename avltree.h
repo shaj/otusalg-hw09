@@ -55,34 +55,36 @@ public:
 
 		if(BT::left != nullptr)
 		{
-			l = BT::left.balance;
+			l = static_cast<AVLTreeNode<T>*>(BT::left.get())->balance;
 		}
 		if(BT::right != nullptr)
 		{
-			r = BT::right.balance;
+			r = static_cast<AVLTreeNode<T>*>(BT::right.get())->balance;
 		}
 
-		if((r - l) > 1)
-		{
-			// Балансировка
-			if(BT::right->right->balance < BT::right->left->balance)
-				bl_rotate();
-			else
-				l_rotate();
-		}
-		else if((r - l) < -1)
-		{
-			// Балансировка
-			if(BT::left->left->balance < BT::left->right->balance)
-				br_rotate();
-			else
-				r_rotate();
-		}
+		// if((r - l) > 1)
+		// {
+		// 	// Балансировка
+		// 	if(static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::right->right)->balance < 
+		// 		static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::right->left)->balance)
+		// 		BT::bl_rotate();
+		// 	else
+		// 		BT::l_rotate();
+		// }
+		// else if((r - l) < -1)
+		// {
+		// 	// Балансировка
+		// 	if(static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::left->left)->balance < 
+		// 		static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::left->right)->balance)
+		// 		BT::br_rotate();
+		// 	else
+		// 		BT::r_rotate();
+		// }
 
 		balance = std::max(r, l) + 1;
 
-		if(BT::parent != nullptr)
-			BT::parent->setBalance();
+		// if(BT::parent != nullptr)
+		// 	static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::parent)->setBalance();
 	}
 
 };
