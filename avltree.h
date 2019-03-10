@@ -62,29 +62,37 @@ public:
 			r = static_cast<AVLTreeNode<T>*>(BT::right.get())->balance;
 		}
 
-		// if((r - l) > 1)
-		// {
-		// 	// Балансировка
-		// 	if(static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::right->right)->balance < 
-		// 		static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::right->left)->balance)
-		// 		BT::bl_rotate();
-		// 	else
-		// 		BT::l_rotate();
-		// }
-		// else if((r - l) < -1)
-		// {
-		// 	// Балансировка
-		// 	if(static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::left->left)->balance < 
-		// 		static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::left->right)->balance)
-		// 		BT::br_rotate();
-		// 	else
-		// 		BT::r_rotate();
-		// }
+		if((r - l) > 1)
+		{
+			// Балансировка
+			if((BT::right->right != nullptr) && (BT::right->left != nullptr))
+
+				// rotate должен обновлять признаки балансировки для каждого измененного узла
+				// rotate в базовом классе не знает какие признаки балансировки используются 
+				// и по каким правилам их нужно обновлять
+
+				
+
+			if(static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::right->right)->balance < 
+				static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::right->left)->balance)
+				BT::bl_rotate();
+			else
+				BT::l_rotate();
+		}
+		else if((r - l) < -1)
+		{
+			// Балансировка
+			if(static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::left->left)->balance < 
+				static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::left->right)->balance)
+				BT::br_rotate();
+			else
+				BT::r_rotate();
+		}
 
 		balance = std::max(r, l) + 1;
 
-		// if(BT::parent != nullptr)
-		// 	static_cast<std::shared_ptr<AVLTreeNode<T>>>(BT::parent)->setBalance();
+		if(BT::parent != nullptr)
+			static_cast<AVLTreeNode<T>*>(BT::parent.get())->setBalance();
 	}
 
 };
