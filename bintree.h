@@ -61,7 +61,7 @@ public:
 		return _data;
 	}
 
-	virtual void insert(const T &it)
+	void insert(const T &it)
 	{
 		if(it < _data)
 		{
