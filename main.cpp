@@ -93,39 +93,82 @@ int main(int argc, char const *argv[])
 		bt.print(std::cout);
 	}
 
-	{
-		std::cout << "\n\nAVL Tree string\n\n";
 
-		std::vector<std::string> v {
-			"A", 
-			"B",
-			"C",
-			"D",
-			"E",
-			"F",
-			"G",
-			"H",
-			"I",
-			"J",
-			"K",
-			"L",
-			"M",
-			"N",
-			"O",
-			"P",
-			"Q"
-		};
+	// {
+	// 	std::cout << "\n\nAVL Tree\n\n";
+
+	// 	std::vector<int> v {
+	// 		8,
+	// 		2, 6, 14,
+	// 		1, 3, 13, 15,
+
+	// 		9, 10, 11, 12,
+
+	// 		4, 5
+	// 	};
 		
-		otusalg::AVLTree<std::string> bt;
+	// 	otusalg::AVLTree<int> bt;
 
-		for(const auto &it: v)
-		{
-			std::cout << "Insert " << it << std::endl;
-			bt.insert(it);
-		}
+	// 	for(const auto &it: v)
+	// 	{
+	// 		std::cout << "Insert " << it << std::endl;
+	// 		bt.insert(it);
+	// 	}
 
-		bt.print(std::cout);
-	}
+	// 	bt.print(std::cout);
+	// }
+
+	// {
+	// 	std::cout << "\n\nAVL Tree\n\n";
+
+	// 	otusalg::AVLTree<int> bt;
+
+	// 	std::srand(std::time(nullptr));
+	
+	// 	for(int i=300; i>0; i--)
+	// 	{
+	// 		bt.insert(std::rand());
+	// 	}
+
+	// 	bt.print(std::cout);
+	// }
+
+
+	// {
+	// 	std::cout << "\n\nAVL Tree string\n\n";
+
+	// 	std::vector<std::string> v {
+	// 		"A", 
+	// 		"B",
+	// 		"C",
+	// 		"D",
+	// 		"E",
+	// 		"F",
+	// 		"G",
+	// 		"H",
+	// 		"I",
+	// 		"J",
+	// 		"K",
+	// 		"L",
+	// 		"M",
+	// 		"N",
+	// 		"O",
+	// 		"P",
+	// 		"Q"
+	// 	};
+		
+	// 	otusalg::AVLTree<std::string> bt;
+
+	// 	for(const auto &it: v)
+	// 	{
+	// 		std::cout << "Insert " << it << std::endl;
+	// 		bt.insert(it);
+	// 	}
+
+	// 	bt.print(std::cout);
+	// }
+
+	std::cout << "BUE BUE\n";
 
 	return 0;
 }

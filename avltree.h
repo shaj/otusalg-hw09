@@ -8,6 +8,7 @@
 // #include "bintree.h"
 
 #define AVLDEBUG
+#define MAXDEPTH 30
 
 namespace otusalg
 {
@@ -15,7 +16,7 @@ namespace otusalg
 template<typename T>
 class AVLTreeNode : public std::enable_shared_from_this<AVLTreeNode<T>>
 {
-
+	int _cnt;
 	T _data;
 
 	std::shared_ptr<AVLTreeNode<T>> left;
@@ -25,23 +26,35 @@ class AVLTreeNode : public std::enable_shared_from_this<AVLTreeNode<T>>
 
 	int balance;
 
+#ifdef AVLDEBUG
+	static int sbcnt;
+#endif
+
 public: 
 
 	// friend AVLTreeNode;
 
-	AVLTreeNode(const T &it, std::shared_ptr<AVLTreeNode<T>> p) : parent(p), _data(it), balance(1) 
+	AVLTreeNode(const T &it, std::shared_ptr<AVLTreeNode<T>> p) : parent(p), _data(it), balance(1), _cnt(1)
 	{
 #ifdef AVLDEBUG
-std::cout << __PRETTY_FUNCTION__ << std::endl;
+std::cout << __PRETTY_FUNCTION__ << "   data " << _data << std::endl;
 #endif
 	}
 
-	~AVLTreeNode() {}
+	~AVLTreeNode() 
+	{
+#ifdef AVLDEBUG
+std::cout << __PRETTY_FUNCTION__ << "   data " << _data << std::endl;
+#endif
+	}
 
 	void setLeft(std::shared_ptr<AVLTreeNode<T>> pn)
 	{
 #ifdef AVLDEBUG
-std::cout << __PRETTY_FUNCTION__ << std::endl;
+std::cout << "~ " << _data << " -> ";
+if(pn != nullptr) std::cout << pn->_data;
+else std::cout << "nullptr";
+std::cout << "   " << __PRETTY_FUNCTION__ << std::endl;
 #endif
 		if(pn != nullptr)
 		{
@@ -55,7 +68,10 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	void setRight(std::shared_ptr<AVLTreeNode<T>> pn)
 	{
 #ifdef AVLDEBUG
-std::cout << __PRETTY_FUNCTION__ << std::endl;
+std::cout << "~ " << _data << " -> ";
+if(pn != nullptr) std::cout << pn->_data;
+else std::cout << "nullptr";
+std::cout << "   " << __PRETTY_FUNCTION__ << std::endl;
 #endif
 		if(pn != nullptr)
 		{
@@ -85,9 +101,11 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 				setBalance(rootNode);
 			}
 			else
+			{
 				left->insert(it, rootNode);
+			}
 		}
-		else
+		else if(it > _data)
 		{
 			if(right == nullptr)
 			{
@@ -95,7 +113,13 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 				setBalance(rootNode);
 			}
 			else
+			{
 				right->insert(it, rootNode);
+			}
+		}
+		else // it == _data
+		{
+			_cnt++;
 		}
 	}
 
@@ -113,7 +137,13 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	{
 #ifdef AVLDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+sbcnt++;
+if(sbcnt > MAXDEPTH)
+	// throw "OVERFLOW";
+	return;
 #endif
+
 		int res = 0;
 		int l = 0;
 		int r = 0;
@@ -150,19 +180,35 @@ std::cout << "setBalance 1 ((r - l) > 1) (br < bl)" << std::endl;
 				c = b->left;
 				M = c->left;
 				N = c->right;
-				if(parent->left.get() == this)
-					parent->setLeft(c);
+				if(parent != nullptr)
+				{
+					if(parent->left.get() == this)
+						parent->setLeft(c);
+					else
+						parent->setRight(c);
+				}
 				else
-					parent->setRight(c);
+				{
+					c->parent = nullptr;
+					*rootNode = c.get();
+				}
 				c->setLeft(this->shared_from_this());
 				c->setRight(b);
-				setLeft(M);
+				setRight(M);
 				b->setLeft(N);
 
-				b->balance = std::max(b->left->balance, b->right->balance) + 1;
-				balance = std::max(left->balance, right->balance) + 1;
+				if(right != nullptr) br = right->balance;
+				else br = 0;
+				if(left != nullptr) bl = left->balance;
+				else bl = 0;
+				balance = std::max(br, bl) + 1;
+				if(b->left != nullptr) bl = b->left->balance;
+				else bl = 0;
+				if(b->right != nullptr) br = b->right->balance;
+				else br = 0;
+				b->balance = std::max(bl, br) + 1;
 				c->balance = std::max(balance, b->balance) + 1;
-				c->parent->setBalance(rootNode);
+				if(c->parent != nullptr) c->parent->setBalance(rootNode);
 			}
 			else
 			{ // Малое левое вращение
@@ -212,19 +258,35 @@ std::cout << "setBalance 3 ((r - l) < -1) (bl < br)" << std::endl;
 				c = b->right;
 				M = c->left;
 				N = c->right;
-				if(parent->left.get() == this)
-					parent->setLeft(c);
+				if(parent != nullptr)
+				{
+					if(parent->left.get() == this)
+						parent->setLeft(c);
+					else
+						parent->setRight(c);
+				}
 				else
-					parent->setRight(c);
+				{
+					c->parent = nullptr;
+					*rootNode = c.get();
+				}
 				c->setLeft(b);
 				c->setRight(this->shared_from_this());
 				setLeft(N);
-				b->setLeft(M);
+				b->setRight(M);
 
-				b->balance = std::max(b->left->balance, b->right->balance) + 1;
-				balance = std::max(left->balance, right->balance) + 1;
+				if(right != nullptr) br = right->balance;
+				else br = 0;
+				if(left != nullptr) bl = left->balance;
+				else bl = 0;
+				balance = std::max(br, bl) + 1;
+				if(b->left != nullptr) bl = b->left->balance;
+				else bl = 0;
+				if(b->right != nullptr) br = b->right->balance;
+				else br = 0;
+				b->balance = std::max(bl, br) + 1;
 				c->balance = std::max(balance, b->balance) + 1;
-				c->parent->setBalance(rootNode);
+				if(c->parent != nullptr) c->parent->setBalance(rootNode);
 			}
 			else
 			{ // Малое левое вращение
@@ -262,7 +324,7 @@ std::cout << "setBalance 4 ((r - l) < -1) (bl >= br)" << std::endl;
 		{ // Баласировать не нужно. Обновляем признаки балансировки.
 			balance = std::max(r, l) + 1;
 #ifdef AVLDEBUG
-std::cout << "setBalance 5. r=" << r << "; l=" << l << "; balance=" << balance << "\n";
+std::cout << "setBalance 5. data " << _data << " r=" << r << "; l=" << l << "; balance=" << balance << "\n";
 #endif
 			if(parent != nullptr)
 				parent->setBalance(rootNode);
@@ -276,7 +338,13 @@ else std::cout << "nullptr";
 std::cout << "; right->balance=";
 if(right != nullptr) std::cout << right->balance;
 else std::cout << "nullptr";
+std::cout << ";   parent=";
+if(parent != nullptr) std::cout << parent->_data;
+else std::cout << "nullptr";
 std::cout << std::endl;
+
+
+sbcnt--;
 #endif
 	}
 
@@ -284,23 +352,37 @@ std::cout << std::endl;
 	std::string fullName()
 	{
 		std::stringstream name;
-		name << _data << "\\n" << balance;
+		name << _data << "\\nparent  ";
+		if(parent != nullptr) name << parent->_data;
+		name << "\\n" << balance;
 		return name.str();
 	}
 
 	void print(std::ostream &os)
 	{
-		os << "\"" << fullName() << "\"\n";
+
+#ifdef AVLDEBUG
+sbcnt++;
+if(sbcnt > MAXDEPTH)
+	// throw "OVERFLOW";
+	return;
+#endif
+
+
+		os << "\"" << _data << "\" [label=\"" << fullName() << "\"]\n";
 		if(left != nullptr)
 		{
-			os << "\"" << fullName() << "\" -> \"" << left->fullName() << "\" [label=\"L\"]\n";
+			os << "\"" << _data << "\" -> \"" << left->_data << "\" [label=\"L\"]\n";
 			left->print(os);
 		}
 		if(right != nullptr)
 		{
-			os << "\"" << fullName() << "\" -> \"" << right->fullName() << "\" [label=\"R\"]\n";
+			os << "\"" << _data << "\" -> \"" << right->_data << "\" [label=\"R\"]\n";
 			right->print(os);
 		}
+#ifdef AVLDEBUG
+sbcnt--;
+#endif
 	}
 
 };
@@ -315,9 +397,19 @@ class AVLTree
 
 public:
 
-	AVLTree() {}
+	AVLTree() 
+	{
+#ifdef AVLDEBUG
+std::cout << __PRETTY_FUNCTION__ << std::endl;
+#endif
+	}
 
-	~AVLTree() {}
+	~AVLTree() 
+	{
+#ifdef AVLDEBUG
+std::cout << __PRETTY_FUNCTION__ << std::endl;
+#endif
+	}
 
 
 	void insert(const T &it)
@@ -336,7 +428,8 @@ std::cout << std::endl;
 			if(newRoot != rootNode.get())
 			{
 #ifdef AVLDEBUG
-std::cout << "!!! chacnge root node !!! was " << rootNode.get() << " new " << newRoot << std::endl;
+std::cout << "!!! change root node !!! was " << rootNode.get() << " new " << newRoot;
+std::cout << "   " << rootNode->data() << " -> " << newRoot->data() << std::endl;
 #endif
 				rootNode.reset(newRoot);
 			}
@@ -374,6 +467,13 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 };
+
+
+
+#ifdef AVLDEBUG
+template<typename T>
+int AVLTreeNode<T>::sbcnt = 0;
+#endif
 
 
 } // namespace otusalg
