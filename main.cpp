@@ -77,21 +77,21 @@ int main(int argc, char const *argv[])
 	// }
 
 
-	{
-		std::cout << "\n\nAVL Tree\n\n";
+	// {
+	// 	std::cout << "\n\nAVL Tree\n\n";
 
-		std::vector<int> v {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+	// 	std::vector<int> v {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
 		
-		otusalg::AVLTree<int> bt;
+	// 	otusalg::AVLTree<int> bt;
 
-		for(const auto &it: v)
-		{
-			std::cout << "Insert " << it << std::endl;
-			bt.insert(it);
-		}
+	// 	for(const auto &it: v)
+	// 	{
+	// 		std::cout << "Insert " << it << std::endl;
+	// 		bt.insert(it);
+	// 	}
 
-		bt.print(std::cout);
-	}
+	// 	bt.print(std::cout);
+	// }
 
 
 	// {
@@ -118,20 +118,20 @@ int main(int argc, char const *argv[])
 	// 	bt.print(std::cout);
 	// }
 
-	// {
-	// 	std::cout << "\n\nAVL Tree\n\n";
+	{
+		std::cout << "\n\nAVL Tree\n\n";
 
-	// 	otusalg::AVLTree<int> bt;
+		otusalg::AVLTree<int> bt;
 
-	// 	std::srand(std::time(nullptr));
+		std::srand(std::time(nullptr));
 	
-	// 	for(int i=300; i>0; i--)
-	// 	{
-	// 		bt.insert(std::rand());
-	// 	}
+		for(int i=300; i>0; i--)
+		{
+			bt.insert(std::rand() % 500);
+		}
 
-	// 	bt.print(std::cout);
-	// }
+		bt.print(std::cout);
+	}
 
 
 	// {

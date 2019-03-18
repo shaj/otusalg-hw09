@@ -21,7 +21,7 @@ class AVLTreeNode : public std::enable_shared_from_this<AVLTreeNode<T>>
 
 	std::shared_ptr<AVLTreeNode<T>> left;
 	std::shared_ptr<AVLTreeNode<T>> right;
-	std::shared_ptr<AVLTreeNode<T>> parent;
+	std::weak_ptr<AVLTreeNode<T>> parent;
 
 
 	int balance;
@@ -48,7 +48,7 @@ std::cout << __PRETTY_FUNCTION__ << "   data " << _data << std::endl;
 #endif
 	}
 
-	void setLeft(std::shared_ptr<AVLTreeNode<T>> pn)
+	void setLeft(std::shared_ptr<AVLTreeNode<T>> const &pn)
 	{
 #ifdef AVLDEBUG
 std::cout << "~ " << _data << " -> ";
@@ -65,7 +65,7 @@ std::cout << "   " << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
-	void setRight(std::shared_ptr<AVLTreeNode<T>> pn)
+	void setRight(std::shared_ptr<AVLTreeNode<T>> const &pn)
 	{
 #ifdef AVLDEBUG
 std::cout << "~ " << _data << " -> ";
@@ -88,7 +88,7 @@ std::cout << "   " << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
-	void insert(const T &it, AVLTreeNode<T> **rootNode) 
+	void insert(const T &it, std::shared_ptr<AVLTreeNode<T>> &rootNode) 
 	{
 #ifdef AVLDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
@@ -124,7 +124,7 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
-	bool remove(const T &it)
+	void remove(const T &it, std::shared_ptr<AVLTreeNode<T>> &rootNode)
 	{
 #ifdef AVLDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
@@ -133,10 +133,10 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
-	void setBalance(AVLTreeNode<T> **rootNode)
+	void setBalance(std::shared_ptr<AVLTreeNode<T>> &rootNode)
 	{
 #ifdef AVLDEBUG
-std::cout << __PRETTY_FUNCTION__ << std::endl;
+std::cout << __PRETTY_FUNCTION__ << "   data " << _data << std::endl;
 
 sbcnt++;
 if(sbcnt > MAXDEPTH)
@@ -180,17 +180,17 @@ std::cout << "setBalance 1 ((r - l) > 1) (br < bl)" << std::endl;
 				c = b->left;
 				M = c->left;
 				N = c->right;
-				if(parent != nullptr)
+				if(auto spt = parent.lock())
 				{
-					if(parent->left.get() == this)
-						parent->setLeft(c);
+					if(spt->left.get() == this)
+						spt->setLeft(c);
 					else
-						parent->setRight(c);
+						spt->setRight(c);
 				}
 				else
 				{
-					c->parent = nullptr;
-					*rootNode = c.get();
+					c->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+					rootNode = c;
 				}
 				c->setLeft(this->shared_from_this());
 				c->setRight(b);
@@ -208,7 +208,8 @@ std::cout << "setBalance 1 ((r - l) > 1) (br < bl)" << std::endl;
 				else br = 0;
 				b->balance = std::max(bl, br) + 1;
 				c->balance = std::max(balance, b->balance) + 1;
-				if(c->parent != nullptr) c->parent->setBalance(rootNode);
+				if(auto spt = c->parent.lock()) 
+					spt->setBalance(rootNode);
 			}
 			else
 			{ // Малое левое вращение
@@ -216,17 +217,17 @@ std::cout << "setBalance 1 ((r - l) > 1) (br < bl)" << std::endl;
 std::cout << "setBalance 2 ((r - l) > 1) (br >= bl)" << std::endl;
 #endif
 				c = b->left;
-				if(parent != nullptr)
+				if(auto spt = parent.lock())
 				{
-					if(parent->left.get() == this)
-						parent->setLeft(b);
+					if(spt->left.get() == this)
+						spt->setLeft(b);
 					else
-						parent->setRight(b);
+						spt->setRight(b);
 				}
 				else
 				{
-					b->parent = nullptr;
-					*rootNode = b.get();
+					b->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+					rootNode = b;
 				}
 				setRight(c);
 				b->setLeft(this->shared_from_this());
@@ -239,7 +240,8 @@ std::cout << "setBalance 2 ((r - l) > 1) (br >= bl)" << std::endl;
 				if(b->right != nullptr) br = b->right->balance;
 				else br = 0;
 				b->balance = std::max(balance, br) + 1;
-				if(b->parent != nullptr) b->parent->setBalance(rootNode);
+				if(auto spt = b->parent.lock()) 
+					spt->setBalance(rootNode);
 			}
 		}
 		else if((r - l) < -1)
@@ -251,24 +253,24 @@ std::cout << "setBalance 2 ((r - l) > 1) (br >= bl)" << std::endl;
 			if(b->left != nullptr) bl = b->left->balance;
 
 			if(bl < br)
-			{ // Большое левое вращение
+			{ // Большое правое вращение
 #ifdef AVLDEBUG
 std::cout << "setBalance 3 ((r - l) < -1) (bl < br)" << std::endl;
 #endif
 				c = b->right;
 				M = c->left;
 				N = c->right;
-				if(parent != nullptr)
+				if(auto spt = parent.lock())
 				{
-					if(parent->left.get() == this)
-						parent->setLeft(c);
+					if(spt->left.get() == this)
+						spt->setLeft(c);
 					else
-						parent->setRight(c);
+						spt->setRight(c);
 				}
 				else
 				{
-					c->parent = nullptr;
-					*rootNode = c.get();
+					c->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+					rootNode = c;
 				}
 				c->setLeft(b);
 				c->setRight(this->shared_from_this());
@@ -286,25 +288,26 @@ std::cout << "setBalance 3 ((r - l) < -1) (bl < br)" << std::endl;
 				else br = 0;
 				b->balance = std::max(bl, br) + 1;
 				c->balance = std::max(balance, b->balance) + 1;
-				if(c->parent != nullptr) c->parent->setBalance(rootNode);
+				if(auto spt = c->parent.lock()) 
+					spt->setBalance(rootNode);
 			}
 			else
-			{ // Малое левое вращение
+			{ // Малое правое вращение
 #ifdef AVLDEBUG
 std::cout << "setBalance 4 ((r - l) < -1) (bl >= br)" << std::endl;
 #endif
 				c = b->right;
-				if(parent != nullptr)
+				if(auto spt = parent.lock())
 				{
-					if(parent->left.get() == this)
-						parent->setLeft(b);
+					if(spt->left.get() == this)
+						spt->setLeft(b);
 					else
-						parent->setRight(b);
+						spt->setRight(b);
 				}
 				else
 				{
-					b->parent = nullptr;
-					*rootNode = b.get();
+					b->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+					rootNode = b;
 				}
 				setLeft(c);
 				b->setRight(this->shared_from_this());
@@ -317,7 +320,8 @@ std::cout << "setBalance 4 ((r - l) < -1) (bl >= br)" << std::endl;
 				if(b->right != nullptr) br = b->right->balance;
 				else br = 0;
 				b->balance = std::max(balance, br) + 1;
-				if(b->parent != nullptr) b->parent->setBalance(rootNode);
+				if(auto spt = b->parent.lock()) 
+					spt->setBalance(rootNode);
 			}
 		}
 		else
@@ -326,8 +330,8 @@ std::cout << "setBalance 4 ((r - l) < -1) (bl >= br)" << std::endl;
 #ifdef AVLDEBUG
 std::cout << "setBalance 5. data " << _data << " r=" << r << "; l=" << l << "; balance=" << balance << "\n";
 #endif
-			if(parent != nullptr)
-				parent->setBalance(rootNode);
+			if(auto spt = parent.lock()) 
+				spt->setBalance(rootNode);
 		}
 
 #ifdef AVLDEBUG
@@ -339,7 +343,8 @@ std::cout << "; right->balance=";
 if(right != nullptr) std::cout << right->balance;
 else std::cout << "nullptr";
 std::cout << ";   parent=";
-if(parent != nullptr) std::cout << parent->_data;
+if(auto spt = parent.lock())
+	std::cout << spt->_data;
 else std::cout << "nullptr";
 std::cout << std::endl;
 
@@ -353,8 +358,9 @@ sbcnt--;
 	{
 		std::stringstream name;
 		name << _data << "\\nparent  ";
-		if(parent != nullptr) name << parent->_data;
-		name << "\\n" << balance;
+		if(auto spt = parent.lock())
+			name << spt->_data;
+		name << "\\ncnt " << _cnt << "\\n" << balance;
 		return name.str();
 	}
 
@@ -419,21 +425,11 @@ std::cout << __PRETTY_FUNCTION__;
 if(rootNode != nullptr) std::cout << "   root node data  " << rootNode->data();
 std::cout << std::endl;
 #endif
+
 		if(rootNode == nullptr)
 			rootNode = std::make_shared<AVLTreeNode<T>>(it, nullptr);
 		else
-		{
-			AVLTreeNode<T> *newRoot = rootNode.get();
-			rootNode->insert(it, &newRoot);
-			if(newRoot != rootNode.get())
-			{
-#ifdef AVLDEBUG
-std::cout << "!!! change root node !!! was " << rootNode.get() << " new " << newRoot;
-std::cout << "   " << rootNode->data() << " -> " << newRoot->data() << std::endl;
-#endif
-				rootNode.reset(newRoot);
-			}
-		}
+			rootNode->insert(it, rootNode);
 	}
 
 
@@ -442,11 +438,10 @@ std::cout << "   " << rootNode->data() << " -> " << newRoot->data() << std::endl
 #ifdef AVLDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
-		if(rootNode != nullptr)
-			if(rootNode->remove(it))
-			{
-				rootNode.reset();
-			}
+
+		if(rootNode != nullptr) 
+			rootNode->remove(it, rootNode);
+
 	}
 
 
@@ -455,6 +450,7 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 #ifdef AVLDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
+
 		return rootNode->find(it);
 	}
 
