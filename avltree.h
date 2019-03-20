@@ -88,6 +88,31 @@ std::cout << "   " << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
+
+	std::shared_ptr<AVLTreeNode<T>> find(const T &it)
+	{
+#ifdef AVLDEBUG
+std::cout << __PRETTY_FUNCTION__ << std::endl;
+#endif
+		if(_data == it)
+			return this->shared_from_this();
+		if(it < _data)
+		{
+			if(left != nullptr)
+				return left->find(it);
+			else
+				return nullptr;
+		}
+		else
+		{
+			if(right != nullptr)
+				return right->find(it);
+			else
+				return nullptr;
+		}
+	}
+
+
 	void insert(const T &it, std::shared_ptr<AVLTreeNode<T>> &rootNode) 
 	{
 #ifdef AVLDEBUG
@@ -124,12 +149,104 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
+private:
+	void _updateParent(std::shared_ptr<AVLTreeNode<T>> &newChild, std::shared_ptr<AVLTreeNode<T>> &rootNode)
+	{
+#ifdef AVLDEBUG
+std::cout << __PRETTY_FUNCTION__;
+if(newChild == nullptr) std::cout << "   nullptr";
+std::cout << std::endl;
+#endif
+		if(auto spt = parent.lock())
+		{ // Есть родитель
+			if(spt->left.get() == this)
+				spt->setLeft(newChild);
+			else
+				spt->setRight(newChild);
+		}
+		else
+		{ // Единственный узел в дереве
+			rootNode = newChild;
+		}
+	}
+
+public:
+
+
 	void remove(const T &it, std::shared_ptr<AVLTreeNode<T>> &rootNode)
 	{
 #ifdef AVLDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
-		return false;
+
+		if(_data == it)
+		{
+			if(_cnt > 1)
+			{
+				_cnt--;
+			}
+			else
+			{
+				if((left == nullptr) && (right == nullptr))
+				{ // Узел является листом. Просто удаляем себя.
+					auto p = parent.lock();
+					_updateParent(left, rootNode);
+					p->setBalance(rootNode);
+				}
+				else if(left != nullptr)
+				{ // Поиск узла слева для замены
+					auto a = this->shared_from_this();
+					auto spt = left->right;
+					if(spt == nullptr)
+					{ // Подставляем левый узел вместо себя
+						_updateParent(left, rootNode);
+						left->setRight(right);
+						left->setBalance(rootNode);
+					}
+					else
+					{
+						while(spt->right != nullptr)
+							spt = spt->right;
+						auto p = spt->parent.lock();
+						auto L = spt->left;
+						_updateParent(spt, rootNode);
+						spt->setLeft(p);
+						spt->setRight(right);
+						p->setRight(L);
+						p->setBalance(rootNode);
+					}
+				}
+				else
+				{ // Поиск узла справа для замены
+					auto a = this->shared_from_this();
+					auto spt = right->left;
+					if(spt == nullptr)
+					{ // Подставляем правый узел вместо себя
+						_updateParent(right, rootNode);
+						// right->setLeft(left);
+						right->setBalance(rootNode);
+					}
+					else
+					{
+						while(spt->left != nullptr)
+							spt = spt->left;
+						auto p = spt->parent.lock();
+						auto R = spt->right;
+						_updateParent(spt, rootNode);
+						spt->setRight(p);
+						// spt->setLeft(left);
+						p->setLeft(R);
+						p->setBalance(rootNode);
+					}
+				}
+			}
+		}
+		else
+		{ // Поиск узла
+			auto n = this->find(it);
+			if(n != nullptr)
+				n->remove(it, rootNode);
+		}				
 	}
 
 
