@@ -2,6 +2,8 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
+#include <string>
+#include <fstream>
 
 #include "generators.h"
 #include "bintree.h"
@@ -25,6 +27,45 @@ struct measure
 		return duration.count();
 	}
 };
+
+
+
+void split(std::vector<std::string> &v, std::string str, std::string delim)
+{
+	std::string word = "";
+	for (int i = 0; i < str.size(); i++)
+	{
+		if (delim.find(str[i]) == std::string::npos)
+		{
+			word += str[i];
+		}
+		else if (word.size() > 0)
+		{
+			v.push_back(word);
+			word = "";
+		}
+	}
+	if (word.size() > 0)
+		v.push_back(word);
+}
+
+
+
+std::vector<std::string> parseDataset(char* name)
+{
+	std::fstream in(name);
+	std::string line;
+	std::vector<std::string> result;
+	if (in.is_open())
+	{
+		while (std::getline(in, line))
+			split(result, line, " .,<>@-=():_';\"");
+	}
+	in.close();
+	return result;
+}
+
+
 
 
 
@@ -94,39 +135,41 @@ int main(int argc, char const *argv[])
 	// }
 
 
-	{
-		std::cout << "\n\nAVL Tree\n\n";
+	// {
+	// 	std::cout << "\n\nAVL Tree\n\n";
 
-		std::vector<int> v {
-			8,
-			2, 6, 14,
-			1, 3, 13, 15, 16,
-			9, 10, 11, 12,
-			4, 5,
+	// 	std::vector<int> v {
+	// 		8,
+	// 		2, 6, 14,
+	// 		1, 3, 13, 15, 16,
+	// 		9, 10, 11, 12,
+	// 		4, 5,
 
-			11, 12, 14, 17, 17, 19, 20, 19
-		};
+	// 		11, 12, 14, 17, 17, 19, 20, 19
+	// 	};
 		
-		otusalg::AVLTree<int> bt;
+	// 	otusalg::AVLTree<int> bt;
 
-		for(const auto &it: v)
-		{
-			std::cout << "Insert " << it << std::endl;
-			bt.insert(it);
-		}
+	// 	for(const auto &it: v)
+	// 	{
+	// 		std::cout << "Insert " << it << std::endl;
+	// 		bt.insert(it);
+	// 	}
 
-		bt.print(std::cout);
+	// 	bt.print(std::cout);
 
-		bt.remove(13);
+	// 	bt.remove(13);
 
-		bt.print(std::cout);
+	// 	bt.print(std::cout);
 
-		bt.remove(11);
-		bt.remove(12);
-		bt.remove(16);
+	// 	bt.remove(11);
+	// 	bt.remove(12);
+	// 	bt.remove(16);
 
-		bt.print(std::cout);
-	}
+	// 	bt.print(std::cout);
+	// }
+
+
 
 	// {
 	// 	std::cout << "\n\nAVL Tree\n\n";
@@ -138,6 +181,13 @@ int main(int argc, char const *argv[])
 	// 	for(int i=300; i>0; i--)
 	// 	{
 	// 		bt.insert(std::rand() % 500);
+	// 	}
+
+	// 	bt.print(std::cout);
+
+	// 	for(int i=1000; i>0; i--)
+	// 	{
+	// 		bt.remove(std::rand() % 500);
 	// 	}
 
 	// 	bt.print(std::cout);
@@ -178,7 +228,20 @@ int main(int argc, char const *argv[])
 	// 	bt.print(std::cout);
 	// }
 
-	std::cout << "BUE BUE\n";
+
+	{
+		std::cout << "\n\nAVL Tree string\n\n";
+		// auto v = parseDataset("wiki.test");
+		auto v = parseDataset("wiki.train");
+		otusalg::AVLTree<std::string> bt;
+		for(const auto &it: v)
+		{
+			bt.insert(it);
+		}
+
+		bt.print(std::cout);
+	}
+
 
 	return 0;
 }

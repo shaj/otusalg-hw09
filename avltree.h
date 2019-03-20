@@ -7,7 +7,7 @@
 
 // #include "bintree.h"
 
-#define AVLDEBUG
+// #define AVLDEBUG
 #define MAXDEPTH 30
 
 namespace otusalg
@@ -30,9 +30,34 @@ class AVLTreeNode : public std::enable_shared_from_this<AVLTreeNode<T>>
 	static int sbcnt;
 #endif
 
+	void _updateParent(std::shared_ptr<AVLTreeNode<T>> &newChild, std::shared_ptr<AVLTreeNode<T>> &rootNode)
+	{
+#ifdef AVLDEBUG
+std::cout << __PRETTY_FUNCTION__;
+if(newChild == nullptr) std::cout << "   nullptr";
+else std::cout << "   " << newChild->_data;
+std::cout << std::endl;
+#endif
+		if(auto spt = parent.lock())
+		{ // Есть родитель
+			if(spt->left.get() == this)
+				spt->setLeft(newChild);
+			else
+				spt->setRight(newChild);
+		}
+		else
+		{ // Единственный узел в дереве
+#ifdef AVLDEBUG
+std::cout << "   new ROOT" << std::endl;
+#endif
+			rootNode = newChild;
+			newChild->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+		}
+	}
+
+
 public: 
 
-	// friend AVLTreeNode;
 
 	AVLTreeNode(const T &it, std::shared_ptr<AVLTreeNode<T>> p) : parent(p), _data(it), balance(1), _cnt(1)
 	{
@@ -150,25 +175,6 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 
 
 private:
-	void _updateParent(std::shared_ptr<AVLTreeNode<T>> &newChild, std::shared_ptr<AVLTreeNode<T>> &rootNode)
-	{
-#ifdef AVLDEBUG
-std::cout << __PRETTY_FUNCTION__;
-if(newChild == nullptr) std::cout << "   nullptr";
-std::cout << std::endl;
-#endif
-		if(auto spt = parent.lock())
-		{ // Есть родитель
-			if(spt->left.get() == this)
-				spt->setLeft(newChild);
-			else
-				spt->setRight(newChild);
-		}
-		else
-		{ // Единственный узел в дереве
-			rootNode = newChild;
-		}
-	}
 
 public:
 
@@ -189,9 +195,22 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 			{
 				if((left == nullptr) && (right == nullptr))
 				{ // Узел является листом. Просто удаляем себя.
-					auto p = parent.lock();
-					_updateParent(left, rootNode);
-					p->setBalance(rootNode);
+					if(auto p = parent.lock())
+					{
+#ifdef AVLDEBUG
+std::cout << "   ~~~ remove 1" << std::endl;
+#endif
+						_updateParent(left, rootNode);
+						p->setBalance(rootNode);
+					}
+					else
+					{ // Последний узел
+#ifdef AVLDEBUG
+std::cout << "   ~~~ remove 2" << std::endl;
+#endif
+						rootNode = nullptr;
+					}
+
 				}
 				else if(left != nullptr)
 				{ // Поиск узла слева для замены
@@ -199,18 +218,24 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 					auto spt = left->right;
 					if(spt == nullptr)
 					{ // Подставляем левый узел вместо себя
+#ifdef AVLDEBUG
+std::cout << "   ~~~ remove 3" << std::endl;
+#endif
 						_updateParent(left, rootNode);
 						left->setRight(right);
 						left->setBalance(rootNode);
 					}
 					else
 					{
+#ifdef AVLDEBUG
+std::cout << "   ~~~ remove 4" << std::endl;
+#endif
 						while(spt->right != nullptr)
 							spt = spt->right;
 						auto p = spt->parent.lock();
 						auto L = spt->left;
 						_updateParent(spt, rootNode);
-						spt->setLeft(p);
+						spt->setLeft(left);
 						spt->setRight(right);
 						p->setRight(L);
 						p->setBalance(rootNode);
@@ -222,18 +247,24 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 					auto spt = right->left;
 					if(spt == nullptr)
 					{ // Подставляем правый узел вместо себя
+#ifdef AVLDEBUG
+std::cout << "   ~~~ remove 5" << std::endl;
+#endif
 						_updateParent(right, rootNode);
 						// right->setLeft(left);
 						right->setBalance(rootNode);
 					}
 					else
 					{
+#ifdef AVLDEBUG
+std::cout << "   ~~~ remove 6" << std::endl;
+#endif
 						while(spt->left != nullptr)
 							spt = spt->left;
 						auto p = spt->parent.lock();
 						auto R = spt->right;
 						_updateParent(spt, rootNode);
-						spt->setRight(p);
+						spt->setRight(right);
 						// spt->setLeft(left);
 						p->setLeft(R);
 						p->setBalance(rootNode);
@@ -257,8 +288,8 @@ std::cout << __PRETTY_FUNCTION__ << "   data " << _data << std::endl;
 
 sbcnt++;
 if(sbcnt > MAXDEPTH)
-	// throw "OVERFLOW";
-	return;
+	throw;
+	// return;
 #endif
 
 		int res = 0;
@@ -474,9 +505,7 @@ sbcnt--;
 	std::string fullName()
 	{
 		std::stringstream name;
-		name << _data << "\\nparent  ";
-		if(auto spt = parent.lock())
-			name << spt->_data;
+		name << _data;
 		name << "\\ncnt " << _cnt << "\\n" << balance;
 		return name.str();
 	}
@@ -487,8 +516,8 @@ sbcnt--;
 #ifdef AVLDEBUG
 sbcnt++;
 if(sbcnt > MAXDEPTH)
-	// throw "OVERFLOW";
-	return;
+	throw;
+	// return;
 #endif
 
 
