@@ -13,4 +13,13 @@ set_target_properties(${PROJ_NAME} PROPERTIES
 )
 
 
-
+# Отсюда
+# https://stackoverflow.com/a/48910054
+add_custom_target( unZip ALL)
+add_custom_command(TARGET unZip PRE_BUILD
+	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_CURRENT_SOURCE_DIR}/wiki.tar.bz2
+	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/wiki.tar.bz2
+	COMMENT "Unpacking wiki.tar.bz2"
+	VERBATIM
+)
