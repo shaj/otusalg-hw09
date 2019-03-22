@@ -7,32 +7,32 @@
 
 // #include "bintree.h"
 
-// #define AVLDEBUG
+// #define RBTDEBUG
 #define MAXDEPTH 30
 
 namespace otusalg
 {
 
 template<typename T>
-class AVLTreeNode : public std::enable_shared_from_this<AVLTreeNode<T>>
+class RBTreeNode : public std::enable_shared_from_this<RBTreeNode<T>>
 {
 	int _cnt;
 	T _data;
 
-	std::shared_ptr<AVLTreeNode<T>> left;
-	std::shared_ptr<AVLTreeNode<T>> right;
-	std::weak_ptr<AVLTreeNode<T>> parent;
+	std::shared_ptr<RBTreeNode<T>> left;
+	std::shared_ptr<RBTreeNode<T>> right;
+	std::weak_ptr<RBTreeNode<T>> parent;
 
 
-	int balance;
+	bool colorRed;
 
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 	static int sbcnt;
 #endif
 
-	void _updateParent(std::shared_ptr<AVLTreeNode<T>> &newChild, std::shared_ptr<AVLTreeNode<T>> &rootNode)
+	void _updateParent(std::shared_ptr<RBTreeNode<T>> &newChild, std::shared_ptr<RBTreeNode<T>> &rootNode)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__;
 if(newChild == nullptr) std::cout << "   nullptr";
 else std::cout << "   " << newChild->_data;
@@ -47,11 +47,11 @@ std::cout << std::endl;
 		}
 		else
 		{ // Единственный узел в дереве
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "   new ROOT" << std::endl;
 #endif
 			rootNode = newChild;
-			newChild->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+			newChild->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
 		}
 	}
 
@@ -59,23 +59,27 @@ std::cout << "   new ROOT" << std::endl;
 public: 
 
 
-	AVLTreeNode(const T &it, std::shared_ptr<AVLTreeNode<T>> p) : parent(p), _data(it), balance(1), _cnt(1)
+	RBTreeNode(const T &it, std::shared_ptr<RBTreeNode<T>> p) : 
+		parent(p), 
+		_data(it), 
+		colorRed(true),   // Узел всегда вставляем красным
+		_cnt(1)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << "   data " << _data << std::endl;
 #endif
 	}
 
-	~AVLTreeNode() 
+	~RBTreeNode() 
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << "   data " << _data << std::endl;
 #endif
 	}
 
-	void setLeft(std::shared_ptr<AVLTreeNode<T>> const &pn)
+	void setLeft(std::shared_ptr<RBTreeNode<T>> const &pn)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "~ " << _data << " -> ";
 if(pn != nullptr) std::cout << pn->_data;
 else std::cout << "nullptr";
@@ -90,9 +94,9 @@ std::cout << "   " << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
-	void setRight(std::shared_ptr<AVLTreeNode<T>> const &pn)
+	void setRight(std::shared_ptr<RBTreeNode<T>> const &pn)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "~ " << _data << " -> ";
 if(pn != nullptr) std::cout << pn->_data;
 else std::cout << "nullptr";
@@ -114,9 +118,9 @@ std::cout << "   " << __PRETTY_FUNCTION__ << std::endl;
 
 
 
-	std::shared_ptr<AVLTreeNode<T>> find(const T &it)
+	std::shared_ptr<RBTreeNode<T>> find(const T &it)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
 		if(_data == it)
@@ -138,17 +142,18 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
-	void insert(const T &it, std::shared_ptr<AVLTreeNode<T>> &rootNode) 
+	void insert(const T &it, std::shared_ptr<RBTreeNode<T>> &rootNode) 
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
 		if(it < _data)
 		{
 			if(left == nullptr)
 			{
-				left = std::make_shared<AVLTreeNode<T>>(it, this->shared_from_this());
-				setBalance(rootNode);
+				left = std::make_shared<RBTreeNode<T>>(it, this->shared_from_this());
+				if(colorRed)
+					left->setBalance(rootNode);
 			}
 			else
 			{
@@ -159,8 +164,9 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 		{
 			if(right == nullptr)
 			{
-				right = std::make_shared<AVLTreeNode<T>>(it, this->shared_from_this());
-				setBalance(rootNode);
+				right = std::make_shared<RBTreeNode<T>>(it, this->shared_from_this());
+				if(colorRed)
+					right->setBalance(rootNode);
 			}
 			else
 			{
@@ -174,9 +180,9 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
-	void remove(const T &it, std::shared_ptr<AVLTreeNode<T>> &rootNode)
+	void remove(const T &it, std::shared_ptr<RBTreeNode<T>> &rootNode)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
 
@@ -192,7 +198,7 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 				{ // Узел является листом. Просто удаляем себя.
 					if(auto p = parent.lock())
 					{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "   ~~~ remove 1" << std::endl;
 #endif
 						_updateParent(left, rootNode);
@@ -200,7 +206,7 @@ std::cout << "   ~~~ remove 1" << std::endl;
 					}
 					else
 					{ // Последний узел
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "   ~~~ remove 2" << std::endl;
 #endif
 						rootNode = nullptr;
@@ -213,7 +219,7 @@ std::cout << "   ~~~ remove 2" << std::endl;
 					auto spt = left->right;
 					if(spt == nullptr)
 					{ // Подставляем левый узел вместо себя
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "   ~~~ remove 3" << std::endl;
 #endif
 						_updateParent(left, rootNode);
@@ -222,7 +228,7 @@ std::cout << "   ~~~ remove 3" << std::endl;
 					}
 					else
 					{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "   ~~~ remove 4" << std::endl;
 #endif
 						while(spt->right != nullptr)
@@ -242,7 +248,7 @@ std::cout << "   ~~~ remove 4" << std::endl;
 					auto spt = right->left;
 					if(spt == nullptr)
 					{ // Подставляем правый узел вместо себя
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "   ~~~ remove 5" << std::endl;
 #endif
 						_updateParent(right, rootNode);
@@ -251,7 +257,7 @@ std::cout << "   ~~~ remove 5" << std::endl;
 					}
 					else
 					{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "   ~~~ remove 6" << std::endl;
 #endif
 						while(spt->left != nullptr)
@@ -276,9 +282,9 @@ std::cout << "   ~~~ remove 6" << std::endl;
 	}
 
 
-	void setBalance(std::shared_ptr<AVLTreeNode<T>> &rootNode)
+	void setBalance(std::shared_ptr<RBTreeNode<T>> &rootNode)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << "   data " << _data << std::endl;
 
 sbcnt++;
@@ -287,16 +293,22 @@ if(sbcnt > MAXDEPTH)
 	// return;
 #endif
 
-		int res = 0;
-		int l = 0;
-		int r = 0;
-
 		auto a = this->shared_from_this();
-		std::shared_ptr<AVLTreeNode<T>> p;
-		std::shared_ptr<AVLTreeNode<T>> b;
-		std::shared_ptr<AVLTreeNode<T>> c;
-		std::shared_ptr<AVLTreeNode<T>> M;
-		std::shared_ptr<AVLTreeNode<T>> N;
+		std::shared_ptr<RBTreeNode<T>> p;   // Родитель
+		std::shared_ptr<RBTreeNode<T>> g;   // Дед
+		std::shared_ptr<RBTreeNode<T>> u;   // Дядя
+		std::shared_ptr<RBTreeNode<T>> gg;  // Родитель деда
+		std::shared_ptr<RBTreeNode<T>> M;
+		std::shared_ptr<RBTreeNode<T>> N;
+
+		if(p = parent.lock())
+		{ // Есть родитель
+			if(g = p->parent.lock())
+			{ // Есть дед
+				if( // Где тут правый / левый - не понятно
+			}
+		}
+
 
 		if(left != nullptr)
 		{
@@ -317,7 +329,7 @@ if(sbcnt > MAXDEPTH)
 
 			if(br < bl)
 			{ // Большое левое вращение
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "setBalance 1 ((r - l) > 1) (br < bl)" << std::endl;
 #endif
 				c = b->left;
@@ -332,7 +344,7 @@ std::cout << "setBalance 1 ((r - l) > 1) (br < bl)" << std::endl;
 				}
 				else
 				{
-					c->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+					c->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
 					rootNode = c;
 				}
 				c->setLeft(this->shared_from_this());
@@ -356,7 +368,7 @@ std::cout << "setBalance 1 ((r - l) > 1) (br < bl)" << std::endl;
 			}
 			else
 			{ // Малое левое вращение
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "setBalance 2 ((r - l) > 1) (br >= bl)" << std::endl;
 #endif
 				c = b->left;
@@ -369,7 +381,7 @@ std::cout << "setBalance 2 ((r - l) > 1) (br >= bl)" << std::endl;
 				}
 				else
 				{
-					b->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+					b->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
 					rootNode = b;
 				}
 				setRight(c);
@@ -397,7 +409,7 @@ std::cout << "setBalance 2 ((r - l) > 1) (br >= bl)" << std::endl;
 
 			if(bl < br)
 			{ // Большое правое вращение
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "setBalance 3 ((r - l) < -1) (bl < br)" << std::endl;
 #endif
 				c = b->right;
@@ -412,7 +424,7 @@ std::cout << "setBalance 3 ((r - l) < -1) (bl < br)" << std::endl;
 				}
 				else
 				{
-					c->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+					c->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
 					rootNode = c;
 				}
 				c->setLeft(b);
@@ -436,7 +448,7 @@ std::cout << "setBalance 3 ((r - l) < -1) (bl < br)" << std::endl;
 			}
 			else
 			{ // Малое правое вращение
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "setBalance 4 ((r - l) < -1) (bl >= br)" << std::endl;
 #endif
 				c = b->right;
@@ -449,7 +461,7 @@ std::cout << "setBalance 4 ((r - l) < -1) (bl >= br)" << std::endl;
 				}
 				else
 				{
-					b->parent = std::weak_ptr<AVLTreeNode<T>>(); // Pointing to nothing
+					b->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
 					rootNode = b;
 				}
 				setLeft(c);
@@ -470,14 +482,14 @@ std::cout << "setBalance 4 ((r - l) < -1) (bl >= br)" << std::endl;
 		else
 		{ // Баласировать не нужно. Обновляем признаки балансировки.
 			balance = std::max(r, l) + 1;
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "setBalance 5. data " << _data << " r=" << r << "; l=" << l << "; balance=" << balance << "\n";
 #endif
 			if(auto spt = parent.lock()) 
 				spt->setBalance(rootNode);
 		}
 
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << "node data  " << _data;
 std::cout << "  left->balance=";
 if(left != nullptr) std::cout << left->balance;
@@ -508,7 +520,7 @@ sbcnt--;
 	void print(std::ostream &os)
 	{
 
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 sbcnt++;
 if(sbcnt > MAXDEPTH)
 	throw;
@@ -516,7 +528,9 @@ if(sbcnt > MAXDEPTH)
 #endif
 
 
-		os << "\"" << _data << "\" [label=\"" << fullName() << "\"]\n";
+		os << "\"" << _data << "\" [label=\"" << fullName() << "\""
+		if(colorRed) os << ",color=indianred1";
+		os << "]\n";
 		if(left != nullptr)
 		{
 			os << "\"" << _data << "\" -> \"" << left->_data << "\" [label=\"L\"]\n";
@@ -527,7 +541,7 @@ if(sbcnt > MAXDEPTH)
 			os << "\"" << _data << "\" -> \"" << right->_data << "\" [label=\"R\"]\n";
 			right->print(os);
 		}
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 sbcnt--;
 #endif
 	}
@@ -537,23 +551,23 @@ sbcnt--;
 
 
 template<typename T>
-class AVLTree
+class RBTree
 {
 
-	std::shared_ptr<AVLTreeNode<T>> rootNode;
+	std::shared_ptr<RBTreeNode<T>> rootNode;
 
 public:
 
-	AVLTree() 
+	RBTree() 
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
 	}
 
-	~AVLTree() 
+	~RBTree() 
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
 	}
@@ -561,14 +575,17 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 
 	void insert(const T &it)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__;
 if(rootNode != nullptr) std::cout << "   root node data  " << rootNode->data();
 std::cout << std::endl;
 #endif
 
 		if(rootNode == nullptr)
-			rootNode = std::make_shared<AVLTreeNode<T>>(it, nullptr);
+		{
+			rootNode = std::make_shared<RBTreeNode<T>>(it, nullptr);
+			rootNode->colorRed = false;   // Корневой узел просто перекрашиваем в черный
+		}
 		else
 			rootNode->insert(it, rootNode);
 	}
@@ -576,7 +593,7 @@ std::cout << std::endl;
 
 	void remove(const T &it)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
 
@@ -586,9 +603,9 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	}
 
 
-	std::shared_ptr<AVLTreeNode<T>> find(const T &it)
+	std::shared_ptr<RBTreeNode<T>> find(const T &it)
 	{
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
 
@@ -598,7 +615,7 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 
 	void print(std::ostream &os)
 	{
-		os << "digraph G {\n";
+		os << "digraph G {\nnode [style=filled,color=honeydew4]\n";
 		rootNode->print(os);
 		os << "}\n";
 	}
@@ -607,9 +624,9 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 
 
 
-#ifdef AVLDEBUG
+#ifdef RBTDEBUG
 template<typename T>
-int AVLTreeNode<T>::sbcnt = 0;
+int RBTreeNode<T>::sbcnt = 0;
 #endif
 
 
