@@ -1,5 +1,7 @@
 
 #include <iostream>
+#include <iterator>
+#include <algorithm>
 #include <vector>
 #include <chrono>
 #include <string>
@@ -8,6 +10,7 @@
 #include "generators.h"
 #include "bintree.h"
 #include "avltree.h"
+#include "rbtree.h"
 
 // Отсюда
 // https://stackoverflow.com/a/21995693
@@ -172,26 +175,53 @@ int main(int argc, char const *argv[])
 
 
 	// {
-	// 	std::cout << "\n\nAVL Tree\n\n";
+	// 	std::cout << "\n\nRB Tree\n\n";
 
-	// 	otusalg::AVLTree<int> bt;
+	// 	std::vector<int> v;
+	// 	otusalg::RBTree<int> bt;
+	// 	int ti;
 
 	// 	std::srand(std::time(nullptr));
 	
-	// 	for(int i=300; i>0; i--)
+	// 	for(int i=0; i<40; i++)
 	// 	{
-	// 		bt.insert(std::rand() % 500);
+	// 		ti = std::rand() % 500;
+	// 		bt.insert(ti);
+	// 		v.push_back(ti);
+	// 		// bt.insert(i);
 	// 	}
 
+	// 	std::copy(v.begin(), v.end(), std::ostream_iterator<int>(std::cout, " "));
+	// 	std::cout << "\n\n";
 	// 	bt.print(std::cout);
 
-	// 	for(int i=1000; i>0; i--)
-	// 	{
-	// 		bt.remove(std::rand() % 500);
-	// 	}
+	// 	// for(int i=1000; i>0; i--)
+	// 	// {
+	// 	// 	bt.remove(std::rand() % 500);
+	// 	// }
 
-	// 	bt.print(std::cout);
+	// 	// bt.print(std::cout);
 	// }
+
+	{
+		std::vector<int> v = 
+		{
+			312, 456, 214, 151, 154, 100, 225, 405, 351,   6,
+			354, 200,  33, 287, 155, 128, 262, 254,  76, 126,
+			274, 315, 391,  63,  53, 497, 433, 292,  95, 476,
+			164, 260, 284, 378, 263, 439, 478, 340, 196, 182
+		};
+
+		otusalg::RBTree<int> bt;
+
+		for(auto const it: v)
+		{
+			bt.insert(it);
+		}
+
+		bt.print(std::cout);
+
+	}
 
 
 	// {
@@ -229,18 +259,18 @@ int main(int argc, char const *argv[])
 	// }
 
 
-	{
-		std::cout << "\n\nAVL Tree string\n\n";
-		// auto v = parseDataset("wiki.test");
-		auto v = parseDataset("wiki.train");
-		otusalg::AVLTree<std::string> bt;
-		for(const auto &it: v)
-		{
-			bt.insert(it);
-		}
+	// {
+	// 	std::cout << "\n\nAVL Tree string\n\n";
+	// 	// auto v = parseDataset("wiki.test");
+	// 	auto v = parseDataset("wiki.train");
+	// 	otusalg::AVLTree<std::string> bt;
+	// 	for(const auto &it: v)
+	// 	{
+	// 		bt.insert(it);
+	// 	}
 
-		bt.print(std::cout);
-	}
+	// 	bt.print(std::cout);
+	// }
 
 
 	return 0;

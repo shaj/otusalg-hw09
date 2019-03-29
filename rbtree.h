@@ -7,7 +7,7 @@
 
 // #include "bintree.h"
 
-// #define RBTDEBUG
+#define RBTDEBUG
 #define MAXDEPTH 30
 
 namespace otusalg
@@ -16,6 +16,7 @@ namespace otusalg
 template<typename T>
 class RBTreeNode : public std::enable_shared_from_this<RBTreeNode<T>>
 {
+	bool colorRed;
 	int _cnt;
 	T _data;
 
@@ -23,46 +24,17 @@ class RBTreeNode : public std::enable_shared_from_this<RBTreeNode<T>>
 	std::shared_ptr<RBTreeNode<T>> right;
 	std::weak_ptr<RBTreeNode<T>> parent;
 
-
-	bool colorRed;
-
 #ifdef RBTDEBUG
 	static int sbcnt;
 #endif
 
-	void _updateParent(std::shared_ptr<RBTreeNode<T>> &newChild, std::shared_ptr<RBTreeNode<T>> &rootNode)
-	{
-#ifdef RBTDEBUG
-std::cout << __PRETTY_FUNCTION__;
-if(newChild == nullptr) std::cout << "   nullptr";
-else std::cout << "   " << newChild->_data;
-std::cout << std::endl;
-#endif
-		if(auto spt = parent.lock())
-		{ // Есть родитель
-			if(spt->left.get() == this)
-				spt->setLeft(newChild);
-			else
-				spt->setRight(newChild);
-		}
-		else
-		{ // Единственный узел в дереве
-#ifdef RBTDEBUG
-std::cout << "   new ROOT" << std::endl;
-#endif
-			rootNode = newChild;
-			newChild->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
-		}
-	}
-
-
 public: 
 
 
-	RBTreeNode(const T &it, std::shared_ptr<RBTreeNode<T>> p) : 
+	RBTreeNode(const T &it, std::shared_ptr<RBTreeNode<T>> p, bool red = true) : 
 		parent(p), 
 		_data(it), 
-		colorRed(true),   // Узел всегда вставляем красным
+		colorRed(red),   // Узел всегда вставляем красным
 		_cnt(1)
 	{
 #ifdef RBTDEBUG
@@ -146,6 +118,11 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 	{
 #ifdef RBTDEBUG
 std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+sbcnt++;
+if(sbcnt > MAXDEPTH)
+	throw;
+	// return;
 #endif
 		if(it < _data)
 		{
@@ -177,6 +154,9 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 		{
 			_cnt++;
 		}
+#ifdef RBTDEBUG
+sbcnt--;
+#endif
 	}
 
 
@@ -194,90 +174,87 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 			}
 			else
 			{
-				if((left == nullptr) && (right == nullptr))
-				{ // Узел является листом. Просто удаляем себя.
-					if(auto p = parent.lock())
+				auto M = this->shared_from_this();   // Удаляемый узел
+				if((left != nullptr) && (right != nullptr))
+				{
+					M = left->right;
+					if(M != nullptr)
 					{
-#ifdef RBTDEBUG
-std::cout << "   ~~~ remove 1" << std::endl;
-#endif
-						_updateParent(left, rootNode);
-						p->setBalance(rootNode);
+						while(M->right != nullptr)
+							M = M->right;
+						_data = M->_data;
 					}
 					else
-					{ // Последний узел
-#ifdef RBTDEBUG
-std::cout << "   ~~~ remove 2" << std::endl;
-#endif
-						rootNode = nullptr;
+					{
+						M = right->left;
+						if(M != nullptr)
+						{
+							while(M->left != nullptr)
+								M = m->left;
+							_data = M->_data;
+						}
+						else
+						{
+							M = this->shared_from_this();
+						}
 					}
-
 				}
-				else if(left != nullptr)
-				{ // Поиск узла слева для замены
-					auto a = this->shared_from_this();
-					auto spt = left->right;
-					if(spt == nullptr)
-					{ // Подставляем левый узел вместо себя
-#ifdef RBTDEBUG
-std::cout << "   ~~~ remove 3" << std::endl;
-#endif
-						_updateParent(left, rootNode);
-						left->setRight(right);
-						left->setBalance(rootNode);
+
+				// Здесь найден удаляемый узел.
+				// Начинаем удаление
+
+				if(M->colorRed)
+				{
+					if((M->left == nullptr) && (M->right == nullptr))
+					{
+						if(auto spt = M->parent.lock())
+						{
+							if(spt->left == M)
+								spt->left = nullptr;
+							else
+								spt->right = nullptr;
+						}
+						else
+						{
+							rootNode = nullptr;
+						}
+					}
+					else if(M->left != nullptr)
+					{
+						auto C = M->left;
+						_updateParent(C, rootNode);
 					}
 					else
 					{
-#ifdef RBTDEBUG
-std::cout << "   ~~~ remove 4" << std::endl;
-#endif
-						while(spt->right != nullptr)
-							spt = spt->right;
-						auto p = spt->parent.lock();
-						auto L = spt->left;
-						_updateParent(spt, rootNode);
-						spt->setLeft(left);
-						spt->setRight(right);
-						p->setRight(L);
-						p->setBalance(rootNode);
+						auto C = M->right;
+						_updateParent(C, rootNode);
 					}
 				}
 				else
-				{ // Поиск узла справа для замены
-					auto a = this->shared_from_this();
-					auto spt = right->left;
-					if(spt == nullptr)
-					{ // Подставляем правый узел вместо себя
-#ifdef RBTDEBUG
-std::cout << "   ~~~ remove 5" << std::endl;
-#endif
-						_updateParent(right, rootNode);
-						// right->setLeft(left);
-						right->setBalance(rootNode);
+				{ // M черный
+					std::shared_ptr<RBTreeNode> C;
+					if(M->left != nullptr)
+						C = M->left;
+					else
+						C = M->right;
+					if(C->colorRed)
+					{
+						_updateParent(C, rootNode);
+						c->colorRed = false;
 					}
 					else
-					{
-#ifdef RBTDEBUG
-std::cout << "   ~~~ remove 6" << std::endl;
-#endif
-						while(spt->left != nullptr)
-							spt = spt->left;
-						auto p = spt->parent.lock();
-						auto R = spt->right;
-						_updateParent(spt, rootNode);
-						spt->setRight(right);
-						// spt->setLeft(left);
-						p->setLeft(R);
-						p->setBalance(rootNode);
+					{ // Сложный случай: М и С черные.
+
 					}
 				}
-			}
+
+
+
+
 		}
 		else
 		{ // Поиск узла
-			auto n = this->find(it);
-			if(n != nullptr)
-				n->remove(it, rootNode);
+			throw;
 		}				
 	}
 
@@ -297,212 +274,162 @@ if(sbcnt > MAXDEPTH)
 		std::shared_ptr<RBTreeNode<T>> p;   // Родитель
 		std::shared_ptr<RBTreeNode<T>> g;   // Дед
 		std::shared_ptr<RBTreeNode<T>> u;   // Дядя
-		std::shared_ptr<RBTreeNode<T>> gg;  // Родитель деда
-		std::shared_ptr<RBTreeNode<T>> M;
 		std::shared_ptr<RBTreeNode<T>> N;
 
 		if(p = parent.lock())
 		{ // Есть родитель
 			if(g = p->parent.lock())
 			{ // Есть дед
-				if( // Где тут правый / левый - не понятно
-			}
-		}
-
-
-		if(left != nullptr)
-		{
-			l = left->balance;
-		}
-		if(right != nullptr)
-		{
-			r = right->balance;
-		}
-
-		if((r - l) > 1)
-		{ // Правая ветка тяжелее левой. Надо поворачивать налево.
-			b = right;
-			int br = 0;
-			int bl = 0;
-			if(b->right != nullptr) br = b->right->balance;
-			if(b->left != nullptr) bl = b->left->balance;
-
-			if(br < bl)
-			{ // Большое левое вращение
-#ifdef RBTDEBUG
-std::cout << "setBalance 1 ((r - l) > 1) (br < bl)" << std::endl;
-#endif
-				c = b->left;
-				M = c->left;
-				N = c->right;
-				if(auto spt = parent.lock())
-				{
-					if(spt->left.get() == this)
-						spt->setLeft(c);
-					else
-						spt->setRight(c);
-				}
+				if(g->left == p) 
+					u = g->right;
 				else
-				{
-					c->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
-					rootNode = c;
-				}
-				c->setLeft(this->shared_from_this());
-				c->setRight(b);
-				setRight(M);
-				b->setLeft(N);
-
-				if(right != nullptr) br = right->balance;
-				else br = 0;
-				if(left != nullptr) bl = left->balance;
-				else bl = 0;
-				balance = std::max(br, bl) + 1;
-				if(b->left != nullptr) bl = b->left->balance;
-				else bl = 0;
-				if(b->right != nullptr) br = b->right->balance;
-				else br = 0;
-				b->balance = std::max(bl, br) + 1;
-				c->balance = std::max(balance, b->balance) + 1;
-				if(auto spt = c->parent.lock()) 
-					spt->setBalance(rootNode);
-			}
-			else
-			{ // Малое левое вращение
+					u = g->left;
+				if((u != nullptr) && (p->colorRed && u->colorRed))
+				{ // Случай 3 (https://ru.wikipedia.org/wiki/%D0%9A%D1%80%D0%B0%D1%81%D0%BD%D0%BE-%D1%87%D1%91%D1%80%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D1%80%D0%B5%D0%B2%D0%BE#%D0%92%D1%81%D1%82%D0%B0%D0%B2%D0%BA%D0%B0)
 #ifdef RBTDEBUG
-std::cout << "setBalance 2 ((r - l) > 1) (br >= bl)" << std::endl;
+std::cout << "Случай 3" << std::endl;
 #endif
-				c = b->left;
-				if(auto spt = parent.lock())
-				{
-					if(spt->left.get() == this)
-						spt->setLeft(b);
-					else
-						spt->setRight(b);
-				}
-				else
-				{
-					b->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
-					rootNode = b;
-				}
-				setRight(c);
-				b->setLeft(this->shared_from_this());
-
-				if(right != nullptr) br = right->balance;
-				else br = 0;
-				if(left != nullptr) bl = left->balance;
-				else bl = 0;
-				balance = std::max(bl, br) + 1;
-				if(b->right != nullptr) br = b->right->balance;
-				else br = 0;
-				b->balance = std::max(balance, br) + 1;
-				if(auto spt = b->parent.lock()) 
-					spt->setBalance(rootNode);
-			}
-		}
-		else if((r - l) < -1)
-		{ // Левая ветка тяжелее правой. Надо поворачивать направо.
-			b = left;
-			int br = 0;
-			int bl = 0;
-			if(b->right != nullptr) br = b->right->balance;
-			if(b->left != nullptr) bl = b->left->balance;
-
-			if(bl < br)
-			{ // Большое правое вращение
+					g->colorRed = true;
+					p->colorRed = false;
+					u->colorRed = false;
 #ifdef RBTDEBUG
-std::cout << "setBalance 3 ((r - l) < -1) (bl < br)" << std::endl;
+std::cout << p->_data << " color ";
+if(p->colorRed) std::cout << "RED";
+else std::cout << "BLACK";
+std::cout << "\n";
+std::cout << g->_data << " color ";
+if(g->colorRed) std::cout << "RED";
+else std::cout << "BLACK";
+std::cout << "\n";
+std::cout << u->_data << " color ";
+if(u->colorRed) std::cout << "RED";
+else std::cout << "BLACK";
+std::cout << "\n";
 #endif
-				c = b->right;
-				M = c->left;
-				N = c->right;
-				if(auto spt = parent.lock())
-				{
-					if(spt->left.get() == this)
-						spt->setLeft(c);
-					else
-						spt->setRight(c);
+					g->setBalance(rootNode);
 				}
-				else
-				{
-					c->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
-					rootNode = c;
-				}
-				c->setLeft(b);
-				c->setRight(this->shared_from_this());
-				setLeft(N);
-				b->setRight(M);
-
-				if(right != nullptr) br = right->balance;
-				else br = 0;
-				if(left != nullptr) bl = left->balance;
-				else bl = 0;
-				balance = std::max(br, bl) + 1;
-				if(b->left != nullptr) bl = b->left->balance;
-				else bl = 0;
-				if(b->right != nullptr) br = b->right->balance;
-				else br = 0;
-				b->balance = std::max(bl, br) + 1;
-				c->balance = std::max(balance, b->balance) + 1;
-				if(auto spt = c->parent.lock()) 
-					spt->setBalance(rootNode);
-			}
-			else
-			{ // Малое правое вращение
+				else if(p->colorRed)
+				{ 
+					if((p->right == a) && (g->left == p))
+					{ // Случай 4
 #ifdef RBTDEBUG
-std::cout << "setBalance 4 ((r - l) < -1) (bl >= br)" << std::endl;
+std::cout << "Случай 4 левый" << std::endl;
 #endif
-				c = b->right;
-				if(auto spt = parent.lock())
-				{
-					if(spt->left.get() == this)
-						spt->setLeft(b);
-					else
-						spt->setRight(b);
-				}
-				else
-				{
-					b->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
-					rootNode = b;
-				}
-				setLeft(c);
-				b->setRight(this->shared_from_this());
+						N = a->left;
+						g->setLeft(a);
+						a->setLeft(p);
+						p->setRight(N);
 
-				if(right != nullptr) br = right->balance;
-				else br = 0;
-				if(left != nullptr) bl = left->balance;
-				else bl = 0;
-				balance = std::max(bl, br) + 1;
-				if(b->right != nullptr) br = b->right->balance;
-				else br = 0;
-				b->balance = std::max(balance, br) + 1;
-				if(auto spt = b->parent.lock()) 
-					spt->setBalance(rootNode);
-			}
+						a = p;
+						p = this->shared_from_this();
+					}
+					else if((p->left.get() == this) && (g->right == p))
+					{ // Случай 4
+#ifdef RBTDEBUG
+std::cout << "Случай 4 правый" << std::endl;
+#endif
+						N = a->right;
+						g->setRight(a);
+						a->setRight(p);
+						p->setLeft(N);
+
+						a = p;
+						p = this->shared_from_this();
+					}
+
+					if(p->colorRed && ((u == nullptr) || !u->colorRed))
+					{ // Случай 5
+						if(p->left == a)
+						{
+#ifdef RBTDEBUG
+std::cout << "Случай 5 левый" << std::endl;
+#endif
+							N = p->right;
+							if(auto gg = g->parent.lock())
+							{
+								if(gg->left == g)
+									gg->setLeft(p);
+								else
+									gg->setRight(p);
+							}
+							else
+							{
+								rootNode = p;
+								p->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
+							}
+							p->setRight(g);
+							g->setLeft(N);							
+							p->colorRed = false;
+							g->colorRed = true;							
+#ifdef RBTDEBUG
+std::cout << p->_data << " color ";
+if(p->colorRed) std::cout << "RED";
+else std::cout << "BLACK";
+std::cout << "\n";
+std::cout << g->_data << " color ";
+if(g->colorRed) std::cout << "RED";
+else std::cout << "BLACK";
+std::cout << "\n";
+#endif
+						}
+						else
+						{
+#ifdef RBTDEBUG
+std::cout << "Случай 5 правый" << std::endl;
+#endif
+							N = p->left;
+							if(auto gg = g->parent.lock())
+							{
+								if(gg->left == g)
+									gg->setLeft(p);
+								else
+									gg->setRight(p);
+							}
+							else
+							{
+								rootNode = p;
+								p->parent = std::weak_ptr<RBTreeNode<T>>(); // Pointing to nothing
+							}
+							p->setLeft(g);
+							g->setRight(N);
+							p->colorRed = false;
+							g->colorRed = true;							
+#ifdef RBTDEBUG
+std::cout << p->_data << " color ";
+if(p->colorRed) std::cout << "RED";
+else std::cout << "BLACK";
+std::cout << "\n";
+std::cout << g->_data << " color ";
+if(g->colorRed) std::cout << "RED";
+else std::cout << "BLACK";
+std::cout << "\n";
+#endif
+						}
+					}
+				}
+			} 
 		}
 		else
-		{ // Баласировать не нужно. Обновляем признаки балансировки.
-			balance = std::max(r, l) + 1;
+		{ // Случай 1
+			colorRed = false;
 #ifdef RBTDEBUG
-std::cout << "setBalance 5. data " << _data << " r=" << r << "; l=" << l << "; balance=" << balance << "\n";
+std::cout << _data << " color ";
+if(colorRed) std::cout << "RED";
+else std::cout << "BLACK";
+std::cout << "\n";
 #endif
-			if(auto spt = parent.lock()) 
-				spt->setBalance(rootNode);
 		}
 
 #ifdef RBTDEBUG
 std::cout << "node data  " << _data;
-std::cout << "  left->balance=";
-if(left != nullptr) std::cout << left->balance;
-else std::cout << "nullptr";
-std::cout << "; right->balance=";
-if(right != nullptr) std::cout << right->balance;
-else std::cout << "nullptr";
+std::cout << "   color ";
+if(colorRed) std::cout << "RED";
+else std::cout << "BLACK";
 std::cout << ";   parent=";
 if(auto spt = parent.lock())
 	std::cout << spt->_data;
 else std::cout << "nullptr";
 std::cout << std::endl;
-
 
 sbcnt--;
 #endif
@@ -513,7 +440,7 @@ sbcnt--;
 	{
 		std::stringstream name;
 		name << _data;
-		name << "\\ncnt " << _cnt << "\\n" << balance;
+		name << "\\ncnt " << _cnt;
 		return name.str();
 	}
 
@@ -528,7 +455,7 @@ if(sbcnt > MAXDEPTH)
 #endif
 
 
-		os << "\"" << _data << "\" [label=\"" << fullName() << "\""
+		os << "\"" << _data << "\" [label=\"" << fullName() << "\"";
 		if(colorRed) os << ",color=indianred1";
 		os << "]\n";
 		if(left != nullptr)
@@ -583,8 +510,7 @@ std::cout << std::endl;
 
 		if(rootNode == nullptr)
 		{
-			rootNode = std::make_shared<RBTreeNode<T>>(it, nullptr);
-			rootNode->colorRed = false;   // Корневой узел просто перекрашиваем в черный
+			rootNode = std::make_shared<RBTreeNode<T>>(it, nullptr, false);
 		}
 		else
 			rootNode->insert(it, rootNode);
@@ -598,7 +524,11 @@ std::cout << __PRETTY_FUNCTION__ << std::endl;
 #endif
 
 		if(rootNode != nullptr) 
-			rootNode->remove(it, rootNode);
+		{
+			auto n = rootNode->find(it);
+			if(n != nullptr)
+				n->remove(it, rootNode);
+		}
 
 	}
 
